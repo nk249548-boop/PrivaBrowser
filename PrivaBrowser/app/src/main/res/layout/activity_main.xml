@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#121212">
+
+    <!-- ── TOP TOOLBAR ── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:background="#1E1E1E"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:elevation="4dp">
+
+        <!-- URL Bar -->
+        <EditText
+            android:id="@+id/url_bar"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/url_bar_bg"
+            android:hint="Search or enter URL"
+            android:hintTextColor="#666666"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:imeOptions="actionGo"
+            android:inputType="textUri"
+            android:singleLine="true"
+            android:selectAllOnFocus="true" />
+
+        <!-- Go Button -->
+        <ImageButton
+            android:id="@+id/btn_go"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_media_play"
+            android:tint="#1A6EFF"
+            android:layout_marginStart="4dp" />
+
+        <!-- Download Button (shown when video detected) -->
+        <Button
+            android:id="@+id/btn_download"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="⬇ Video"
+            android:textSize="11sp"
+            android:backgroundTint="#FF6B35"
+            android:textColor="#FFFFFF"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:layout_marginStart="4dp"
+            android:visibility="gone" />
+
+        <!-- Playlist Button -->
+        <ImageButton
+            android:id="@+id/btn_playlist"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_media_rew"
+            android:tint="#888888"
+            android:layout_marginStart="4dp" />
+
+    </LinearLayout>
+
+    <!-- ── PROGRESS BAR ── -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:progressTint="#1A6EFF"
+        android:visibility="gone"
+        android:max="100" />
+
+    <!-- ── WEBVIEW ── -->
+    <WebView
+        android:id="@+id/web_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- ── BOTTOM NAVIGATION BAR ── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:background="#1E1E1E"
+        android:gravity="center_vertical"
+        android:elevation="4dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:src="@android:drawable/ic_media_previous"
+            android:tint="#AAAAAA" />
+
+        <ImageButton
+            android:id="@+id/btn_forward"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:src="@android:drawable/ic_media_next"
+            android:tint="#AAAAAA" />
+
+        <ImageButton
+            android:id="@+id/btn_refresh"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:src="@android:drawable/ic_popup_sync"
+            android:tint="#AAAAAA" />
+
+        <ImageButton
+            android:id="@+id/btn_home"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:src="@android:drawable/ic_dialog_info"
+            android:tint="#AAAAAA" />
+
+        <ImageButton
+            android:id="@+id/btn_clear"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:src="@android:drawable/ic_menu_delete"
+            android:tint="#FF4444" />
+
+    </LinearLayout>
+
+</LinearLayout>
