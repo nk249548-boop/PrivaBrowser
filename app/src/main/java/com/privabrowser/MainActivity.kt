@@ -1,360 +1,101 @@
 package com.privabrowser
 
-import android.Manifest
-import android.app.DownloadManager
-import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.view.KeyEvent
-import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.webkit.*
-import android.widget.Toast
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
-import com.privabrowser.databinding.ActivityMainBinding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import android.view.View
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
-    private lateinit var adBlocker: AdBlocker
-    private val detectedVideoUrls = mutableListOf<String>()
-
-    companion object {
-        const val HOME_URL = "https://duckduckgo.com"
-        const val PERMISSION_STORAGE = 100
-    }
+    private lateinit var webView: WebView
+    private lateinit var urlBar: EditText
+    private lateinit var progressBar: ProgressBar
+    private lateinit var btnDownload: ImageButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_main)
 
-        adBlocker = AdBlocker(this)
-        lifecycleScope.launch { adBlocker.initialize() }
+        // Initialize Views
+        webView = findViewById(R.id.webView)
+        urlBar = findViewById(R.id.urlBar)
+        progressBar = findViewById(R.id.progressBar)
+        btnDownload = findViewById(R.id.btnDownload)
 
-        setupWebView()
-        setupToolbar()
-        setupBottomBar()
+        val btnBack: ImageButton = findViewById(R.id.btnBack)
+        val btnForward: ImageButton = findViewById(R.id.btnForward)
+        val btnGo: ImageButton = findViewById(R.id.btnGo)
+        val btnRefresh: ImageButton = findViewById(R.id.btnRefresh)
+        val btnHome: ImageButton = findViewById(R.id.btnHome)
+        val btnClear: ImageButton = findViewById(R.id.btnClear)
+        val btnPlaylist: ImageButton = findViewById(R.id.btnPlaylist)
 
-        binding.webView.loadUrl(HOME_URL)
-    }
-
-    // ─────────────────────────────────────────
-    // WEBVIEW SETUP
-    // ─────────────────────────────────────────
-    private fun setupWebView() {
-        with(binding.webView.settings) {
-            javaScriptEnabled = true
-            domStorageEnabled = true
-            databaseEnabled = true
-            loadWithOverviewMode = true
-            useWideViewPort = true
-            setSupportZoom(true)
-            builtInZoomControls = true
-            displayZoomControls = false
-            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            cacheMode = WebSettings.LOAD_DEFAULT
-            userAgentString = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36"
-            // Privacy: disable save form data
-            saveFormData = false
-            savePassword = false
-            // Geolocation off
-            setGeolocationEnabled(false)
-        }
-
-        // Block third-party cookies
-        CookieManager.getInstance().apply {
-            setAcceptCookie(true)
-            setAcceptThirdPartyCookies(binding.webView, false)
-        }
-
-        binding.webView.webViewClient = PrivaWebViewClient()
-        binding.webView.webChromeClient = PrivaWebChromeClient()
-
-        // Video URL detection via JavaScript interface
-        binding.webView.addJavascriptInterface(VideoDetector(), "VideoDetector")
-
-        // Download listener for direct file downloads
-        binding.webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, contentLength ->
-            handleDownload(url, mimeType, contentDisposition)
-        }
-    }
-
-    // ─────────────────────────────────────────
-    // AD BLOCKER - WebViewClient
-    // ─────────────────────────────────────────
-    inner class PrivaWebViewClient : WebViewClient() {
-
-        override fun shouldInterceptRequest(
-            view: WebView,
-            request: WebResourceRequest
-        ): WebResourceResponse? {
-            val url = request.url.toString()
-
-            // Check ad blocker
-            if (adBlocker.shouldBlock(url)) {
-                return WebResourceResponse("text/plain", "utf-8", null)
-            }
-
-            // Detect video URLs
-            detectVideoUrl(url)
-
-            return super.shouldInterceptRequest(view, request)
-        }
-
-        override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
-            super.onPageStarted(view, url, favicon)
-            binding.progressBar.visibility = View.VISIBLE
-            binding.urlBar.setText(url)
-            detectedVideoUrls.clear()
-            binding.btnDownload.visibility = View.GONE
-            injectVideoDetectionScript(view)
-        }
-
-        override fun onPageFinished(view: WebView, url: String) {
-            super.onPageFinished(view, url)
-            binding.progressBar.visibility = View.GONE
-            binding.urlBar.setText(url)
-            injectVideoDetectionScript(view)
-        }
-
-        override fun onReceivedError(
-            view: WebView, request: WebResourceRequest, error: WebResourceError) {
-            super.onReceivedError(view, request, error)
-            if (request.isForMainFrame) {
-                binding.progressBar.visibility = View.GONE
+        // WebView Setup
+        webView.settings.javaScriptEnabled = true
+        webView.settings.domStorageEnabled = true
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                // FIX for line 162 error: Use .setText() or .text.toString()
+                urlBar.setText(url)
+                progressBar.visibility = View.GONE
             }
         }
-    }
 
-    // ─────────────────────────────────────────
-    // CHROME CLIENT (Progress, Title)
-    // ─────────────────────────────────────────
-    inner class PrivaWebChromeClient : WebChromeClient() {
-        override fun onProgressChanged(view: WebView, newProgress: Int) {
-            binding.progressBar.progress = newProgress
-        }
-        override fun onReceivedTitle(view: WebView, title: String) {
-            supportActionBar?.title = title
-        }
-    }
-
-    // ─────────────────────────────────────────
-    // VIDEO DETECTION
-    // ─────────────────────────────────────────
-    private fun detectVideoUrl(url: String) {
-        val videoExtensions = listOf(".mp4", ".m3u8", ".mkv", ".webm", ".avi", ".mov", ".ts")
-        if (videoExtensions.any { url.contains(it, ignoreCase = true) } &&
-            !detectedVideoUrls.contains(url)) {
-            detectedVideoUrls.add(url)
-            runOnUiThread {
-                binding.btnDownload.visibility = View.VISIBLE
-                binding.btnDownload.text = "⬇ Video (${detectedVideoUrls.size})"
-            }
-        }
-    }
-
-    private fun injectVideoDetectionScript(view: WebView) {
-        val script = """
-            (function() {
-                function notifyVideo(url) {
-                    if (url && (url.includes('.mp4') || url.includes('.m3u8') || 
-                        url.includes('.webm') || url.includes('.mkv'))) {
-                        VideoDetector.onVideoFound(url);
-                    }
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                progressBar.progress = newProgress
+                if (newProgress < 100) {
+                    progressBar.visibility = View.VISIBLE
+                } else {
+                    progressBar.visibility = View.GONE
                 }
-                // Check existing video/source elements
-                document.querySelectorAll('video, source').forEach(el => {
-                    if (el.src) notifyVideo(el.src);
-                    if (el.currentSrc) notifyVideo(el.currentSrc);
-                });
-                // Observe DOM for new video elements
-                const observer = new MutationObserver(mutations => {
-                    mutations.forEach(m => m.addedNodes.forEach(node => {
-                        if (node.tagName === 'VIDEO' || node.tagName === 'SOURCE') {
-                            notifyVideo(node.src || node.currentSrc);
-                        }
-                    }));
-                });
-                observer.observe(document.body || document.documentElement, 
-                    {childList: true, subtree: true});
-            })();
-        """.trimIndent()
-        view.evaluateJavascript(script, null)
-    }
-
-    inner class VideoDetector {
-        @JavascriptInterface
-        fun onVideoFound(url: String) {
-            runOnUiThread { detectVideoUrl(url) }
-        }
-    }
-
-    // ─────────────────────────────────────────
-    // DOWNLOAD HANDLER
-    // ─────────────────────────────────────────
-    private fun handleDownload(url: String, mimeType: String = "video/mp4", contentDisposition: String = "") {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), PERMISSION_STORAGE)
-                return
             }
         }
 
-        val fileName = URLUtil.guessFileName(url, contentDisposition, mimeType)
-        val request = DownloadManager.Request(Uri.parse(url)).apply {
-            setTitle(fileName)
-            setDescription("Downloading via PrivaBrowser")
-            setMimeType(mimeType)
-            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "PrivaBrowser/$fileName")
-            addRequestHeader("User-Agent", binding.webView.settings.userAgentString)
-            addRequestHeader("Referer", binding.webView.url ?: "")
-        }
-
-        val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val downloadId = dm.enqueue(request)
-
-        // Save to playlist DB
-        lifecycleScope.launch(Dispatchers.IO) {
-            val db = AppDatabase.getDatabase(this@MainActivity)
-            db.videoDao().insert(
-                VideoEntity(
-                    title = fileName,
-                    url = url,
-                    localPath = "${Environment.DIRECTORY_DOWNLOADS}/PrivaBrowser/$fileName",
-                    downloadId = downloadId,
-                    timestamp = System.currentTimeMillis()
-                )
-            )
-        }
-
-        Toast.makeText(this, "⬇ Downloading: $fileName", Toast.LENGTH_LONG).show()
-    }
-
-    private fun showVideoDownloadDialog() {
-        if (detectedVideoUrls.isEmpty()) {
-            Toast.makeText(this, "No video found on this page", Toast.LENGTH_SHORT).show()
-            return
-        }
-        // Show picker if multiple videos found
-        val titles = detectedVideoUrls.mapIndexed { i, url ->
-            "Video ${i + 1}: ...${url.takeLast(40)}"
-        }.toTypedArray()
-
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Download Video")
-            .setItems(titles) { _, which ->
-                handleDownload(detectedVideoUrls[which])
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    // ─────────────────────────────────────────
-    // TOOLBAR SETUP
-    // ─────────────────────────────────────────
-    private fun setupToolbar() {
-        binding.urlBar.setOnEditorActionListener { _, actionId, event ->
-            if (actionId == EditorInfo.IME_ACTION_GO ||
-                event?.keyCode == KeyEvent.KEYCODE_ENTER) {
-                navigateTo(binding.urlBar.text.toString())
+        // URL Bar Action
+        urlBar.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_GO) {
+                loadUrl()
                 true
-            } else false
+            } else {
+                false
+            }
         }
 
-        binding.btnGo.setOnClickListener {
-            navigateTo(binding.urlBar.text.toString())
+        btnGo.setOnClickListener { loadUrl() }
+
+        // Navigation Controls
+        btnBack.setOnClickListener { if (webView.canGoBack()) webView.goBack() }
+        btnForward.setOnClickListener { if (webView.canGoForward()) webView.goForward() }
+        btnRefresh.setOnClickListener { webView.reload() }
+        btnHome.setOnClickListener { webView.loadUrl("https://www.google.com") }
+        
+        btnClear.setOnClickListener {
+            webView.clearHistory()
+            webView.clearCache(true)
+            urlBar.setText("")
+            webView.loadUrl("about:blank")
         }
 
-        binding.btnDownload.setOnClickListener {
-            showVideoDownloadDialog()
-        }
-
-        binding.btnPlaylist.setOnClickListener {
-            startActivity(Intent(this, PlaylistActivity::class.java))
-        }
+        // Default Load
+        webView.loadUrl("https://www.google.com")
     }
 
-    private fun setupBottomBar() {
-        binding.btnBack.setOnClickListener {
-            if (binding.webView.canGoBack()) binding.webView.goBack()
-        }
-        binding.btnForward.setOnClickListener {
-            if (binding.webView.canGoForward()) binding.webView.goForward()
-        }
-        binding.btnRefresh.setOnClickListener {
-            binding.webView.reload()
-        }
-        binding.btnHome.setOnClickListener {
-            binding.webView.loadUrl(HOME_URL)
-        }
-        binding.btnClear.setOnClickListener {
-            clearBrowsingData()
-        }
-    }
-
-    private fun navigateTo(input: String) {
-        val url = when {
-            input.startsWith("http://") || input.startsWith("https://") -> input
-            input.contains(".") && !input.contains(" ") -> "https://$input"
-            else -> "https://duckduckgo.com/?q=${Uri.encode(input)}"
-        }
-        binding.webView.loadUrl(url)
-        hideKeyboard()
-    }
-
-    // ─────────────────────────────────────────
-    // PRIVACY: Clear on exit
-    // ─────────────────────────────────────────
-    private fun clearBrowsingData() {
-        binding.webView.clearCache(true)
-        binding.webView.clearHistory()
-        binding.webView.clearFormData()
-        CookieManager.getInstance().removeAllCookies(null)
-        CookieManager.getInstance().flush()
-        WebStorage.getInstance().deleteAllData()
-        Toast.makeText(this, "🧹 Browsing data cleared", Toast.LENGTH_SHORT).show()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        // Auto-clear on background (privacy mode)
-        val prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE)
-        if (prefs.getBoolean("private_mode", true)) {
-            clearBrowsingData()
-        }
-    }
-
-    override fun onBackPressed() {
-        if (binding.webView.canGoBack()) {
-            binding.webView.goBack()
-        } else {
-            super.onBackPressed()
-        }
-    }
-
-    private fun hideKeyboard() {
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-        imm.hideSoftInputFromWindow(binding.urlBar.windowToken, 0)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_STORAGE && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "Permission granted. Try downloading again.", Toast.LENGTH_SHORT).show()
+    private fun loadUrl() {
+        var url = urlBar.text.toString().trim()
+        if (url.isNotEmpty()) {
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "https://www.google.com/search?q=$url"
+            }
+            webView.loadUrl(url)
         }
     }
 }
+
