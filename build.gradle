@@ -1,7 +1,8 @@
-// Root build.gradle
+// Root-level build.gradle file
 buildscript {
     ext.kotlin_version = "1.9.22"
     repositories {
+        // Yahan repositories reh sakti hain sirf buildscript dependencies ke liye
         google()
         mavenCentral()
     }
@@ -12,13 +13,10 @@ buildscript {
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
+// Note: allprojects { repositories { ... } } block ko hata diya gaya hai
+// Kyunki repositories ab settings.gradle mein manage hoti hain.
 
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
