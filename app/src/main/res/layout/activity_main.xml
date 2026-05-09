@@ -4,7 +4,6 @@
     android:layout_height="match_parent"
     android:background="#0D0D0D">
 
-    <!-- URL Bar & Controls -->
     <LinearLayout
         android:id="@+id/urlBarLayout"
         android:layout_width="match_parent"
@@ -15,46 +14,29 @@
         android:gravity="center_vertical">
 
         <EditText
-            android:id="@+id/urlEditText"
+            android:id="@+id/urlBar"
             android:layout_width="0dp"
             android:layout_height="45dp"
             android:layout_weight="1"
-            android:background="@android:color/transparent"
             android:hint="Search or type URL"
             android:textColorHint="#808080"
             android:textColor="#FFFFFF"
+            android:background="@android:color/transparent"
             android:paddingStart="12dp"
-            android:paddingEnd="12dp"
             android:imeOptions="actionGo"
-            android:inputType="textUri"
-            android:textSize="14sp" />
+            android:inputType="textUri" />
 
-        <ImageButton
-            android:id="@+id/btnDownload"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/stat_sys_download"
-            android:visibility="gone"
-            android:contentDescription="Download Video" />
-
+        <Button
+            android:id="@+id/btnGo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="GO" />
     </LinearLayout>
 
-    <!-- WebView Container -->
-    <FrameLayout
-        android:id="@+id/webViewContainer"
+    <WebView
+        android:id="@+id/webView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/urlBarLayout" />
-
-    <!-- Progress Bar -->
-    <ProgressBar
-        android:id="@+id/progressBar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="3dp"
-        android:layout_below="@id/urlBarLayout"
-        android:progressDrawable="@android:color/holo_blue_light"
-        android:visibility="gone" />
-
 </RelativeLayout>
+
