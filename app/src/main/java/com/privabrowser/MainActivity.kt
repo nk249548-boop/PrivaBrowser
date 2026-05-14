@@ -10,6 +10,9 @@ import android.widget.ImageButton
 import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
 import android.view.View
+// NAYE IMPORTS
+import com.yausername.youtubedl_android.YoutubeDL
+import com.yausername.ffmpeg_android.FFmpeg
 
 class MainActivity : AppCompatActivity() {
 
