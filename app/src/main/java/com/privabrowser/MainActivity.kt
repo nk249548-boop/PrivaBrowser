@@ -25,6 +25,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+                // NAYA ENGINE START CODE
+        try {
+            YoutubeDL.getInstance().init(applicationContext)
+            FFmpeg.getInstance().init(applicationContext)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         // Initialize Views
         webView = findViewById(R.id.webView)
         urlBar = findViewById(R.id.urlBar)
